@@ -27,4 +27,27 @@ export class FeedbackService {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
   }
+
+  public sendReport(
+    email: string,
+    feedback: string,
+    name: string,
+    street: string,
+    zip: string,
+    city: string,
+    country: string
+  ): Observable<any> {
+    const url = `${this.host}${this.feedbackPath}/report`;
+    const body = new URLSearchParams();
+    body.set('email', email);
+    body.set('feedback', feedback);
+    body.set('name', name);
+    body.set('street', street);
+    body.set('zip', zip);
+    body.set('city', city);
+    body.set('country', country);
+    return this.http.post(url, body.toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+  }
 }

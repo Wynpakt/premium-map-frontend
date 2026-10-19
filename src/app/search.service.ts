@@ -162,6 +162,7 @@ export interface Item {
   zip: string;
   web: string;
   email: string;
+  phone?: string;
   uri: string;
 }
 

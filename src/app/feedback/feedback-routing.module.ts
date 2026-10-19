@@ -5,6 +5,11 @@ import { FeedbackComponent } from './feedback.component';
 
 const routes: Routes = [
   {
+    path: 'neu',
+    component: FeedbackComponent,
+    data: { report: true }
+  },
+  {
     path: ':itemId',
     component: FeedbackComponent
   }

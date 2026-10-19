@@ -1,10 +1,17 @@
 <app-popup>
-  <h1>Feedback</h1>
+  <h1>{{ reportMode ? 'Verkaufsstelle melden' : 'Feedback' }}</h1>
   @if (!feedbackSentMessage) {
     <div>
       <div class="info">
-        Ist Dir ein Fehler aufgefallen? Gib uns gerne bescheid...
+        {{ reportMode ? 'Dieser Laden fehlt auf der Karte? Schreib uns die Adresse.' : 'Ist Dir ein Fehler aufgefallen? Gib uns gerne bescheid...' }}
       </div>
+      @if (reportMode) {
+        <input [(ngModel)]="shopName" type="text" placeholder="Name der Verkaufsstelle" />
+        <input [(ngModel)]="shopStreet" type="text" placeholder="Straße und Hausnummer" />
+        <input [(ngModel)]="shopZip" type="text" placeholder="PLZ" />
+        <input [(ngModel)]="shopCity" type="text" placeholder="Ort" />
+        <input [(ngModel)]="shopCountry" type="text" placeholder="Land (DE, AT, CH)" />
+      }
       <input [(ngModel)]="feedbackEmail" type="email" placeholder="Deine Mailadresse" />
       <textarea [(ngModel)]="feedbackText" placeholder="Deine Nachricht"></textarea>
       <button (click)="sendFeedback()">Absenden</button>
