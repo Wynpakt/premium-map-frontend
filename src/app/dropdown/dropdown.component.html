@@ -1,10 +1,14 @@
 <div class="wrapper" [style.min-width]="minWidth">
-    <span class="select active" [class.active]="isDropdown" (click)="openDropdown()">{{ selectMessage }}
-        <i class="fa fa-caret-down" aria-hidden="true"></i>
-    </span>
-    <a [class.disabled]="!selectItems[selectItem.id].value" *ngFor="let selectItem of getSelectItems()"
-        (click)="toggleProperty(selectItem.id)">
-        <img *ngIf="selectItems[selectItem.id].icon" height="32" width="28" src="assets/svg-icons/{{ selectItems[selectItem.id].icon }}" />
-        {{ selectItem.name }}
+  <span class="select active" [class.active]="isDropdown" (click)="openDropdown()">{{ selectMessage }}
+    <i class="fa fa-caret-down" aria-hidden="true"></i>
+  </span>
+  @for (selectItem of getSelectItems(); track selectItem) {
+    <a [class.disabled]="!selectItems[selectItem.id].value"
+      (click)="toggleProperty(selectItem.id)">
+      @if (selectItems[selectItem.id].icon) {
+        <img height="32" width="28" src="assets/svg-icons/{{ selectItems[selectItem.id].icon }}" />
+      }
+      {{ selectItem.name }}
     </a>
+  }
 </div>

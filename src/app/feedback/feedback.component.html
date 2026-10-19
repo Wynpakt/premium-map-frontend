@@ -1,14 +1,18 @@
 <app-popup>
-    <h1>Feedback</h1>
-    <div *ngIf="!feedbackSentMessage">
-        <div class="info">
-            Ist Dir ein Fehler aufgefallen? Gib uns gerne bescheid...
-        </div>
-        <input [(ngModel)]="feedbackEmail" type="email" placeholder="Deine Mailadresse" />
-        <textarea [(ngModel)]="feedbackText" placeholder="Deine Nachricht"></textarea>
-        <button (click)="sendFeedback()">Absenden</button>
+  <h1>Feedback</h1>
+  @if (!feedbackSentMessage) {
+    <div>
+      <div class="info">
+        Ist Dir ein Fehler aufgefallen? Gib uns gerne bescheid...
+      </div>
+      <input [(ngModel)]="feedbackEmail" type="email" placeholder="Deine Mailadresse" />
+      <textarea [(ngModel)]="feedbackText" placeholder="Deine Nachricht"></textarea>
+      <button (click)="sendFeedback()">Absenden</button>
     </div>
-    <div *ngIf="feedbackSentMessage">
-        <div class="info">{{ feedbackSentMessage }}</div>
+  }
+  @if (feedbackSentMessage) {
+    <div>
+      <div class="info">{{ feedbackSentMessage }}</div>
     </div>
+  }
 </app-popup>

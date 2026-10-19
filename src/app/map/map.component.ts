@@ -10,9 +10,10 @@ import { createCustomLeafletControl } from './CustomLeafletControl';
 import { distanceByLatLong } from './distanceByLatLong';
 
 @Component({
-  selector: "app-map",
-  templateUrl: "./map.component.html",
-  styleUrls: ["./map.component.css"],
+    selector: "app-map",
+    templateUrl: "./map.component.html",
+    styleUrls: ["./map.component.css"],
+    standalone: false
 })
 export class MapComponent implements OnInit {
   private map: L.Map | undefined;

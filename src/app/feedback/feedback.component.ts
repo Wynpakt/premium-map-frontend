@@ -4,9 +4,10 @@ import { FeedbackService } from '../feedback.service';
 import { filter } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-feedback',
-  templateUrl: './feedback.component.html',
-  styleUrls: ['./feedback.component.css']
+    selector: 'app-feedback',
+    templateUrl: './feedback.component.html',
+    styleUrls: ['./feedback.component.css'],
+    standalone: false
 })
 export class FeedbackComponent implements OnInit {
 

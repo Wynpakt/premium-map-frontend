@@ -8,9 +8,10 @@ export interface SelectItem {
 }
 
 @Component({
-  selector: 'app-dropdown',
-  templateUrl: './dropdown.component.html',
-  styleUrls: ['./dropdown.component.css']
+    selector: 'app-dropdown',
+    templateUrl: './dropdown.component.html',
+    styleUrls: ['./dropdown.component.css'],
+    standalone: false
 })
 export class DropdownComponent implements OnInit {
   @Output() selectItemValueChanged = new EventEmitter<SelectItem>();

@@ -4,22 +4,26 @@
       <input type="text" class="searchbar"
         placeholder="Laden, (Groß)Handel, lokaler Kontakt oder Onlinehandel eingeben..." #searchInput
         (keyup)="debounceSearchInput.next(searchInput.value)" />
-      <button class="searchbarButton" type="button">
+      <button class="searchbarButton" type="button" (click)="debounceSearchInput.next(searchInput.value)">
         <i class="fa fa-search" aria-hidden="true"></i>
       </button>
       <div class="searchResults">
-        <div class="searchResult" *ngFor="let searchResult of (searchResults | slice: 0:3)"
-          (click)="router.navigate([searchResult.id])">
-          <img src="assets/svg-icons/{{ searchService.mapShopTypesToImage(['1']) }}" />
-          <div class="address">
-            <h3>{{ searchResult.name }}</h3>
-            {{ searchResult.street }}, {{ searchResult.zip }}
-            {{ searchResult.city }}
+        @for (searchResult of searchResults; track searchResult.id) {
+          <div class="searchResult"
+            (click)="router.navigate([searchResult.id])">
+            <img src="assets/svg-icons/{{ searchService.mapShopTypesToImage(searchResult.offertypes) }}" />
+            <div class="address">
+              <h3>{{ searchResult.name }}</h3>
+              {{ searchResult.street }}, {{ searchResult.zip }}
+              {{ searchResult.city }}
+            </div>
+            @if (homePosition) {
+              <div class="homePosition">
+                {{ distanceByLatLong(searchResult.lat, searchResult.lng, homePosition.latitude, homePosition.longitude) }} km
+              </div>
+            }
           </div>
-          <div class="homePosition" *ngIf="homePosition">
-            {{ distanceByLatLong(searchResult.lat, searchResult.lng, homePosition.latitude, homePosition.longitude) }} km
-          </div>
-        </div>
+        }
       </div>
     </div>
     <a (click)="toggleLegend()">?</a>
@@ -39,10 +43,10 @@
     </span>
 
     <app-dropdown selectMessage="Kontakt-Art" [selectItems]="offertypes" minWidth="160px"
-      (selectItemValueChanged)="offertypeFilterChanged($event)"></app-dropdown>
+    (selectItemValueChanged)="offertypeFilterChanged($event)"></app-dropdown>
 
     <app-dropdown selectMessage="Produkte" [selectItems]="products" minWidth="134px"
-      (selectItemValueChanged)="productsFilterChanged($event)"></app-dropdown>
+    (selectItemValueChanged)="productsFilterChanged($event)"></app-dropdown>
   </div>
 </div>
 <div id="map"></div>
