@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Params } from "@angular/router";
 import { FeedbackService } from '../feedback.service';
 import { filter } from 'rxjs/operators';
@@ -7,6 +7,7 @@ import { filter } from 'rxjs/operators';
     selector: 'app-feedback',
     templateUrl: './feedback.component.html',
     styleUrls: ['./feedback.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class FeedbackComponent implements OnInit {

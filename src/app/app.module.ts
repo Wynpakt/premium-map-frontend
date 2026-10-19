@@ -1,6 +1,6 @@
 import { NgModule } from "@angular/core";
 import { BrowserModule } from "@angular/platform-browser";
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 
 import { AppRoutingModule } from "./app-routing.module";
 import { SearchService } from './search.service';
@@ -14,5 +14,5 @@ import { DropdownComponent } from "./dropdown/dropdown.component";
         DropdownComponent,
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
-        AppRoutingModule], providers: [SearchService, provideHttpClient(withInterceptorsFromDi())] })
+        AppRoutingModule], providers: [SearchService, provideHttpClient(withXhr(), withInterceptorsFromDi())] })
 export class AppModule {}

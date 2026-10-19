@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, ChangeDetectionStrategy } from "@angular/core";
 import { Subject } from "rxjs";
 import * as L from "leaflet";
 import "leaflet.markercluster";
@@ -13,6 +13,7 @@ import { distanceByLatLong } from './distanceByLatLong';
     selector: "app-map",
     templateUrl: "./map.component.html",
     styleUrls: ["./map.component.css"],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class MapComponent implements OnInit {
