@@ -2,11 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 import { Observable } from 'rxjs';
+import { environment } from '../environments/environment';
 
 @Injectable()
 export class SearchService {
-  // private host = "http://localhost:8085";
-  private host = 'https://api.landkarte.premium-cola.de';
+  private host = environment.apiHost;
   private searchPath = '/search';
   private itemListPath = '/item/list';
   private itemAllPath = '/item/all';
