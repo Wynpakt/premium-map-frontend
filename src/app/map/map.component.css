@@ -211,3 +211,49 @@
     margin-top   : auto;
     margin-bottom: auto;
 }
+
+/*
+  Leaflet builds these nodes after the view exists, so they never receive
+  the emulated encapsulation attribute. ::ng-deep keeps the rules with the map.
+*/
+:host ::ng-deep .map-corner-actions {
+    --corner-control-size: 30px;
+    display    : flex;
+    align-items: center;
+    gap        : 8px;
+    background : transparent;
+    border     : 0;
+    box-shadow : none;
+}
+
+:host ::ng-deep .map-corner-actions .report-shop {
+    box-sizing  : border-box;
+    font-family : franklingothic, "Helvetica Neue", Arial, Helvetica, sans-serif;
+    height      : var(--corner-control-size);
+    font-size   : 20px;
+    line-height : 1;
+    color       : black;
+    background  : white;
+    box-shadow  : 0 0 4px 0 rgba(0, 0, 0, 0.45);
+    border      : 0;
+    border-radius: 3px;
+    padding     : 0 8px;
+    cursor      : pointer;
+    white-space : nowrap;
+}
+
+:host ::ng-deep .map-corner-actions .map-info-button {
+    box-sizing      : border-box;
+    display         : flex;
+    align-items     : center;
+    justify-content : center;
+    width           : var(--corner-control-size);
+    height          : var(--corner-control-size);
+    background-color: white;
+    font-size       : 20px;
+    font-weight     : 700;
+    line-height     : 1;
+    text-align      : center;
+    cursor          : pointer;
+    color           : black;
+}

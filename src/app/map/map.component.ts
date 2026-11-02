@@ -6,7 +6,7 @@ import { SelectItem } from "../dropdown/dropdown.component";
 import { SearchResult, Item, SearchService } from "../search.service";
 import { ActivatedRoute, Router, Params } from "@angular/router";
 import { debounceTime } from "rxjs/operators";
-import { createCustomLeafletControl } from './CustomLeafletControl';
+import { createCornerActionsControl, createCustomLeafletControl } from './CustomLeafletControl';
 import { distanceByLatLong } from './distanceByLatLong';
 
 @Component({
@@ -153,11 +153,15 @@ export class MapComponent implements OnInit {
       })
       .addTo(this.map);
 
-    // Add imprint control button
-    const imprintControl = createCustomLeafletControl("bottomright", "info", () => {
-      this.toggleImprint();
-    });
-    this.map.addControl(new imprintControl());
+    const cornerActions = createCornerActionsControl(
+      () => {
+        this.router.navigate(["/feedback/neu"]);
+      },
+      () => {
+        this.toggleImprint();
+      },
+    );
+    this.map.addControl(new cornerActions());
 
     // Add home control button
     const homeControl = createCustomLeafletControl("bottomleft", "home", () => {
