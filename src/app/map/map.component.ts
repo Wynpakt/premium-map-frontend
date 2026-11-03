@@ -8,6 +8,7 @@ import { ActivatedRoute, Router, Params } from "@angular/router";
 import { debounceTime } from "rxjs/operators";
 import { createCornerActionsControl, createCustomLeafletControl } from './CustomLeafletControl';
 import { distanceByLatLong } from './distanceByLatLong';
+import { shopPopupHtml } from './shop-popup';
 import { environment } from '../../environments/environment';
 
 const STATE_OPTIONS: { id: string; name: string }[] = [
@@ -279,7 +280,10 @@ export class MapComponent implements OnInit {
         () => {
           return "Lade Daten...";
         },
-        { autoPanPadding: new L.Point(65, 65) },
+        {
+          autoPanPadding: new L.Point(65, 65),
+          maxWidth: this.internal ? 420 : 300,
+        },
       );
 
       marker.off("click");
@@ -298,46 +302,7 @@ export class MapComponent implements OnInit {
           .itemDetails(marker.getId())
           .subscribe((itemDetails: Item) => {
             this.selectedItem = itemDetails;
-            marker.setPopupContent(
-              `
-              <h2>${itemDetails.name}</h2>
-              <small>${itemDetails.offertypes.join(", ")} für</small>
-              <small>${itemDetails.products.join(", ")}</small>
-              <br>
-              <p>
-                ${itemDetails.street}<br>
-                ${itemDetails.zip} ${itemDetails.city}
-              </p>
-              <p>
-                ${itemDetails.web
-                ? '<i class="fa fa-globe" aria-hidden="true"></i> <a target="_blank" href="' +
-                itemDetails.web +
-                '">' +
-                itemDetails.web +
-                "</a>"
-                : ""
-              }<br>
-                ${itemDetails.email
-                ? '<i class="fa fa-envelope" aria-hidden="true"></i> <a href="mailto:' +
-                itemDetails.email +
-                '">' +
-                itemDetails.email +
-                "</a>"
-                : ""
-              }
-              </p>
-              <p>
-                <i class="fa fa-bullhorn" aria-hidden="true"></i>
-                <a href="/feedback/${itemDetails.id}">Feedback zu diesem Eintrag?</a>
-              </p>
-              <p>
-                <small>
-                  Achtung: vor dem Losfahren bitte anrufen und fragen ob das gewünschte Produkt verfügbar ist.
-                  Falls nicht, bitten wir um ein kurzes Feedback
-                </small>
-              </p>
-            `,
-            );
+            marker.setPopupContent(shopPopupHtml(itemDetails, this.internal));
           });
       });
       //

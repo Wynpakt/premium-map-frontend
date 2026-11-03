@@ -107,6 +107,22 @@ body {
   color: black;
 }
 
+.leaflet-popup-content .shop-note,
+.leaflet-popup-content .shop-contacts {
+  font-weight: normal;
+}
+
+.leaflet-popup-content .shop-note {
+  white-space: pre-wrap;
+  max-height: 8em;
+  overflow: auto;
+}
+
+.leaflet-popup-content .shop-contacts {
+  margin: 0.4em 0 0.4em 1.1em;
+  padding: 0;
+}
+
 .marker-former {
   filter: grayscale(1);
   opacity: 0.72;
