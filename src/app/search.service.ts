@@ -180,6 +180,22 @@ export interface Item {
   web: string;
   email: string;
   uri: string;
+  phone?: string;
+  phone2?: string;
+  department?: string;
+  person?: string;
+  note?: string;
+  inactive?: boolean;
+  no_mailings?: boolean;
+  collmex_id?: number;
+  groups?: string[];
+  contacts?: Array<{
+    name: string;
+    department: string;
+    phone: string;
+    phone2: string;
+    email: string;
+  }>;
 }
 
 export enum ShopType {
