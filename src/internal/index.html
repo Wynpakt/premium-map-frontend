@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Premium-Landkarte</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <!--
+    fonts need to be always 'crossorigin' even if they are not:
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Preloading_content#cors-enabled_fetches
+  -->
+  <link rel="preload" href="fontawesome-webfont.20fd1704ea223900efa9.woff2?v=4.7.0" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="franklingothicsb-xcon-webfont.34144143b9e52995252a.woff2" as="font" type="font/woff2" crossorigin>
+
+  <link rel="preload" href="https://a.tile.openstreetmap.org/7/67/41.png" as="image" type="image/png"> <!-- "Niedersachsen", Norden -->
+  <link rel="preload" href="https://b.tile.openstreetmap.org/7/67/42.png" as="image" type="image/png"> <!-- "Kassel", Mitte -->
+  <link rel="preload" href="https://c.tile.openstreetmap.org/7/67/43.png" as="image" type="image/png"> <!-- "Wuerzburg", Sueden -->
+
+  <link rel="preload" href="/assets/svg-icons/marker-icon-l.b3124d196493d83e9aa500089c5ce67490a7cec1847fce891842f2d3cbf31f1f.svg" as="image" type="image/svg+xml">
+  <link rel="preload" href="/assets/svg-icons/marker-icon-h.e30564530d085950c9d25baf877b72bede18682696a01332803249a20f5f6a8d.svg" as="image" type="image/svg+xml">
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>
