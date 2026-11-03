@@ -22,4 +22,18 @@ describe('DropdownComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('filters a long list by the typed group name', () => {
+    component.searchable = true;
+    component.selectItems = {
+      '4': { id: '4', name: 'Interessent', value: true },
+      '9': { id: '9', name: 'Händler', value: true },
+    };
+    component.query = 'inter';
+
+    expect(component.getSelectItems().map(item => item.name)).toEqual(['Interessent']);
+
+    component.query = '';
+    expect(component.getSelectItems().map(item => item.id)).toEqual(['4', '9']);
+  });
 });

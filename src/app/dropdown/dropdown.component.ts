@@ -24,13 +24,25 @@ export class DropdownComponent implements OnInit {
   public minWidth: string;
 
   @Input()
+  public menuMaxHeight = '';
+
+  @Input()
+  public searchable = false;
+
+  @Input()
   public selectItems: {
     [id: string]: SelectItem;
   };
   public isDropdown = false;
+  public query = '';
 
   public getSelectItems(): SelectItem[] {
-    return Object.keys(this.selectItems).map(id => this.selectItems[id]);
+    const items = Object.keys(this.selectItems).map(id => this.selectItems[id]);
+    const needle = this.query.trim().toLowerCase();
+    if (!this.searchable || needle === '') {
+      return items;
+    }
+    return items.filter(item => item.name.toLowerCase().includes(needle));
   }
 
   public openDropdown() {

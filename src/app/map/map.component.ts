@@ -110,6 +110,7 @@ export class MapComponent implements OnInit {
   public statuses: { [id: string]: SelectItem } = {};
   public visibility: { [id: string]: SelectItem } = {};
   public states: { [id: string]: SelectItem } = {};
+  public addressGroups: { [id: string]: SelectItem } = {};
 
   private itemList: any[];
 
@@ -146,17 +147,17 @@ export class MapComponent implements OnInit {
   async ngOnInit() {
     this.initalizeMap();
 
-    this.loadMarkers()
-      .subscribe((itemList) => {
-        this.itemList = itemList;
-        this.updateMarker(() => {
-          this.route.params.subscribe((params: Params) => {
-            if (params.item) {
-              this.showDetails(params.item);
-            }
-          });
-        });
+    if (this.internal) {
+      this.searchService.addressGroups().subscribe({
+        next: (groups) => {
+          this.applyAddressGroups(groups);
+          this.startMarkerLoad();
+        },
+        error: () => this.startMarkerLoad(),
       });
+    } else {
+      this.startMarkerLoad();
+    }
 
     this.route.queryParams
       .subscribe((queryParams: Params) => {
@@ -361,6 +362,38 @@ export class MapComponent implements OnInit {
     }
   }
 
+  private startMarkerLoad() {
+    this.loadMarkers()
+      .subscribe((itemList) => {
+        this.itemList = itemList;
+        this.updateMarker(() => {
+          this.route.params.subscribe((params: Params) => {
+            if (params.item) {
+              this.showDetails(params.item);
+            }
+          });
+        });
+      });
+  }
+
+  private applyAddressGroups(groups: { id: string; name: string }[]) {
+    const next: { [id: string]: SelectItem } = {};
+    if (!Array.isArray(groups)) {
+      this.addressGroups = next;
+      return;
+    }
+    groups.forEach(group => {
+      const id = `${group.id}`;
+      const current = this.addressGroups[id];
+      next[id] = {
+        id,
+        name: group.name,
+        value: current ? current.value : true,
+      };
+    });
+    this.addressGroups = next;
+  }
+
   /**
    * Load and update new marker based on the selected filter
    */
@@ -377,11 +410,17 @@ export class MapComponent implements OnInit {
     if (!this.internal) {
       return undefined;
     }
-    return {
+    const filters: { status: string[]; visibility: string[]; states: string[]; groups?: string[] } = {
       status: this.enabledIds(this.statuses),
       visibility: this.enabledIds(this.visibility),
       states: this.enabledIds(this.states),
     };
+    const ids = Object.keys(this.addressGroups);
+    const enabled = this.enabledIds(this.addressGroups);
+    if (ids.length > 0 && enabled.length !== ids.length) {
+      filters.groups = enabled;
+    }
+    return filters;
   }
 
   private filterItems(): void {
