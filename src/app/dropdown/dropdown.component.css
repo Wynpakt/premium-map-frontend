@@ -1,9 +1,32 @@
-.select~a {
+.menu {
     display: none;
+    overflow-y: auto;
 }
 
-.select.active~a {
+.select.active + .menu {
     display: block;
+}
+
+.long .menu a {
+    height: auto;
+    min-height: 39px;
+    line-height: 1.25;
+    white-space: normal;
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.query {
+    width: 100%;
+    box-sizing: border-box;
+    height: 32px;
+    border: 0;
+    border-bottom: 1px solid black;
+    padding: 0 8px;
+    font: inherit;
+    position: sticky;
+    top: 0;
+    background: white;
 }
 
 a {

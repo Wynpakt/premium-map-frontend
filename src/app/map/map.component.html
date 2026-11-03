@@ -60,6 +60,9 @@
         (selectItemValueChanged)="groupFilterChanged(visibility, $event)"></app-dropdown>
       <app-dropdown selectMessage="Bundesland" [selectItems]="states" minWidth="180px"
         (selectItemValueChanged)="groupFilterChanged(states, $event)"></app-dropdown>
+      <app-dropdown selectMessage="Adressgruppe" [selectItems]="addressGroups" minWidth="280px"
+        menuMaxHeight="320px" [searchable]="true"
+        (selectItemValueChanged)="groupFilterChanged(addressGroups, $event)"></app-dropdown>
     }
   </div>
 </div>

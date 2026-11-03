@@ -37,7 +37,7 @@ export class SearchService {
     types: string[],
     countries: string[],
     products: string[],
-    internal?: { status: string[]; visibility: string[]; states: string[] }
+    internal?: { status: string[]; visibility: string[]; states: string[]; groups?: string[] }
   ): Observable<any[]> {
     let url = `${this.host}${this.itemListPath}`;
     url += `?types[]=${types.join('&types[]=')}`;
@@ -47,6 +47,9 @@ export class SearchService {
       url += this.listValues('status', internal.status);
       url += this.listValues('visibility', internal.visibility);
       url += this.listValues('states', internal.states);
+      if (internal.groups !== undefined) {
+        url += this.listValues('groups', internal.groups);
+      }
     }
     return this.http
       .get<any>(url)
@@ -58,6 +61,11 @@ export class SearchService {
       return `&${key}[]=`;
     }
     return values.map(value => `&${key}[]=${encodeURIComponent(value)}`).join('');
+  }
+
+  public addressGroups(): Observable<{ id: string; name: string }[]> {
+    const url = `${this.host}/item/groups`;
+    return this.http.get<any>(url).pipe(map(res => (res.data || []) as { id: string; name: string }[]));
   }
 
   public itemAll() {
