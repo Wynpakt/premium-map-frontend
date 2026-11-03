@@ -3,4 +3,5 @@
 export const environment = {
   production: true,
   apiHost: '',
+  internal: true,
 };

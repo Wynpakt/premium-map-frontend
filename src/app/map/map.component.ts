@@ -8,6 +8,26 @@ import { ActivatedRoute, Router, Params } from "@angular/router";
 import { debounceTime } from "rxjs/operators";
 import { createCornerActionsControl, createCustomLeafletControl } from './CustomLeafletControl';
 import { distanceByLatLong } from './distanceByLatLong';
+import { environment } from '../../environments/environment';
+
+const STATE_OPTIONS: { id: string; name: string }[] = [
+  { id: 'BW', name: 'Baden-Württemberg' },
+  { id: 'BY', name: 'Bayern' },
+  { id: 'BE', name: 'Berlin' },
+  { id: 'BB', name: 'Brandenburg' },
+  { id: 'HB', name: 'Bremen' },
+  { id: 'HH', name: 'Hamburg' },
+  { id: 'HE', name: 'Hessen' },
+  { id: 'MV', name: 'Mecklenburg-Vorpommern' },
+  { id: 'NI', name: 'Niedersachsen' },
+  { id: 'NW', name: 'Nordrhein-Westfalen' },
+  { id: 'RP', name: 'Rheinland-Pfalz' },
+  { id: 'SL', name: 'Saarland' },
+  { id: 'SN', name: 'Sachsen' },
+  { id: 'ST', name: 'Sachsen-Anhalt' },
+  { id: 'SH', name: 'Schleswig-Holstein' },
+  { id: 'TH', name: 'Thüringen' },
+];
 
 @Component({
     selector: "app-map",
@@ -85,6 +105,11 @@ export class MapComponent implements OnInit {
     CH: true,
   };
 
+  public readonly internal = environment.internal;
+  public statuses: { [id: string]: SelectItem } = {};
+  public visibility: { [id: string]: SelectItem } = {};
+  public states: { [id: string]: SelectItem } = {};
+
   private itemList: any[];
 
   public debounceSearchInput: Subject<string> = new Subject();
@@ -98,17 +123,29 @@ export class MapComponent implements OnInit {
     public router: Router,
   ) {
     this.itemList = [];
+    if (!environment.internal) {
+      return;
+    }
+    this.offertypes.ohne = { id: 'ohne', name: 'ohne Rolle', value: true };
+    this.products.ohne = { id: 'ohne', name: 'ohne Produkt', value: true };
+    this.countriesState.OTHER = true;
+    this.statuses = {
+      aktuell: { id: 'aktuell', name: 'aktuell', value: true },
+      ehemalig: { id: 'ehemalig', name: 'ehemalig', value: true },
+    };
+    this.visibility = {
+      oeffentlich: { id: 'oeffentlich', name: 'auf der öffentlichen Karte', value: true },
+      verborgen: { id: 'verborgen', name: 'ausdrücklich nicht', value: true },
+    };
+    STATE_OPTIONS.forEach(state => {
+      this.states[state.id] = { id: state.id, name: state.name, value: true };
+    });
   }
 
   async ngOnInit() {
     this.initalizeMap();
 
-    this.searchService
-      .itemList(
-        this.enabledOffertypes(),
-        this.enabledCountries(),
-        this.enabledProducts(),
-      )
+    this.loadMarkers()
       .subscribe((itemList) => {
         this.itemList = itemList;
         this.updateMarker(() => {
@@ -233,6 +270,7 @@ export class MapComponent implements OnInit {
               }`,
             iconSize: [36, 42],
             popupAnchor: [0, -20],
+            className: item[3] ? 'marker-former' : '',
           }),
         },
       );
@@ -361,13 +399,28 @@ export class MapComponent implements OnInit {
   /**
    * Load and update new marker based on the selected filter
    */
+  private loadMarkers() {
+    return this.searchService.itemList(
+      this.enabledOffertypes(),
+      this.enabledCountries(),
+      this.enabledProducts(),
+      this.internalFilters(),
+    );
+  }
+
+  private internalFilters() {
+    if (!this.internal) {
+      return undefined;
+    }
+    return {
+      status: this.enabledIds(this.statuses),
+      visibility: this.enabledIds(this.visibility),
+      states: this.enabledIds(this.states),
+    };
+  }
+
   private filterItems(): void {
-    this.searchService
-      .itemList(
-        this.enabledOffertypes(),
-        this.enabledCountries(),
-        this.enabledProducts()
-      )
+    this.loadMarkers()
       .subscribe(itemList => {
         this.itemList = itemList;
         this.updateMarker();
@@ -376,16 +429,7 @@ export class MapComponent implements OnInit {
 
   public toggleCountry(country: string) {
     this.countriesState[country] = !this.countriesState[country];
-    this.searchService
-      .itemList(
-        this.enabledOffertypes(),
-        this.enabledCountries(),
-        this.enabledProducts()
-      )
-      .subscribe(itemList => {
-        this.itemList = itemList;
-        this.updateMarker();
-      });
+    this.filterItems();
   }
 
   /**
@@ -395,15 +439,15 @@ export class MapComponent implements OnInit {
    * Buttons with light text color represents disabled offertypes.
    */
   public enabledOffertypes(): string[] {
-    return Object.keys(this.offertypes).filter(id => {
-      return this.offertypes[id].value;
-    });
+    return this.enabledIds(this.offertypes);
   }
 
   public enabledProducts(): string[] {
-    return Object.keys(this.products).filter(id => {
-      return this.products[id].value;
-    });
+    return this.enabledIds(this.products);
+  }
+
+  private enabledIds(items: { [id: string]: SelectItem }): string[] {
+    return Object.keys(items).filter(id => items[id].value);
   }
 
   public enabledCountries(): Array<string> {
@@ -423,6 +467,11 @@ export class MapComponent implements OnInit {
 
   public productsFilterChanged(productsFilterItem: SelectItem) {
     this.products[productsFilterItem.id].value = productsFilterItem.value;
+    this.filterItems();
+  }
+
+  public groupFilterChanged(group: { [id: string]: SelectItem }, item: SelectItem) {
+    group[item.id].value = item.value;
     this.filterItems();
   }
 

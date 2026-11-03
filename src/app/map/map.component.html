@@ -1,4 +1,4 @@
-<div class="topbar">
+<div class="topbar" [class.internal]="internal">
   <div class="searchAndLegend">
     <div class="searchArea">
       <input type="text" class="searchbar"
@@ -40,6 +40,11 @@
       <div [class.active]="countriesState.CH" (click)="toggleCountry('CH')">
         CH
       </div>
+      @if (internal) {
+        <div [class.active]="countriesState.OTHER" (click)="toggleCountry('OTHER')">
+          weitere
+        </div>
+      }
     </span>
 
     <app-dropdown selectMessage="Kontakt-Art" [selectItems]="offertypes" minWidth="160px"
@@ -47,6 +52,15 @@
 
     <app-dropdown selectMessage="Produkte" [selectItems]="products" minWidth="134px"
     (selectItemValueChanged)="productsFilterChanged($event)"></app-dropdown>
+
+    @if (internal) {
+      <app-dropdown selectMessage="Status" [selectItems]="statuses" minWidth="120px"
+        (selectItemValueChanged)="groupFilterChanged(statuses, $event)"></app-dropdown>
+      <app-dropdown selectMessage="Sichtbarkeit" [selectItems]="visibility" minWidth="170px"
+        (selectItemValueChanged)="groupFilterChanged(visibility, $event)"></app-dropdown>
+      <app-dropdown selectMessage="Bundesland" [selectItems]="states" minWidth="180px"
+        (selectItemValueChanged)="groupFilterChanged(states, $event)"></app-dropdown>
+    }
   </div>
 </div>
 <div id="map"></div>

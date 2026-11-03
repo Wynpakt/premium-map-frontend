@@ -36,15 +36,28 @@ export class SearchService {
   public itemList(
     types: string[],
     countries: string[],
-    products: string[]
+    products: string[],
+    internal?: { status: string[]; visibility: string[]; states: string[] }
   ): Observable<any[]> {
     let url = `${this.host}${this.itemListPath}`;
     url += `?types[]=${types.join('&types[]=')}`;
     url += `&countries[]=${countries.join('&countries[]=')}`;
     url += `&products[]=${products.join('&products[]=')}`;
+    if (internal) {
+      url += this.listValues('status', internal.status);
+      url += this.listValues('visibility', internal.visibility);
+      url += this.listValues('states', internal.states);
+    }
     return this.http
       .get<any>(url)
       .pipe(map(itemList => itemList.data as any[]));
+  }
+
+  private listValues(key: string, values: string[]): string {
+    if (values.length === 0) {
+      return `&${key}[]=`;
+    }
+    return values.map(value => `&${key}[]=${encodeURIComponent(value)}`).join('');
   }
 
   public itemAll() {
@@ -132,6 +145,10 @@ export class SearchService {
     ) {
       abbriviation = 'o';
       hash = '46085aa61342e805eb5bfb6fa9e2f6b96e95a45a01ab2e58d9f33a3aa74ef0ae';
+    }
+
+    if (abbriviation === '') {
+      return '../img/marker/marker-icon.png';
     }
 
     return `${['marker-icon', abbriviation].join('-')}.${hash}.svg`;
