@@ -10,6 +10,7 @@ import { createCornerActionsControl, createCustomLeafletControl } from './Custom
 import { distanceByLatLong } from './distanceByLatLong';
 import { shopPopupHtml } from './shop-popup';
 import { environment } from '../../environments/environment';
+import { MapPin, PinGroup, splitZoom, visibleGroups } from './pin-grid';
 
 const STATE_OPTIONS: { id: string; name: string }[] = [
   { id: 'BW', name: 'Baden-Württemberg' },
@@ -40,6 +41,16 @@ const STATE_OPTIONS: { id: string; name: string }[] = [
 export class MapComponent implements OnInit {
   private map: L.Map | undefined;
   private markerClusterGroup: L.MarkerClusterGroup | undefined;
+  private pinLayer: L.LayerGroup | undefined;
+  private shownGroups = '';
+  private pendingPopupId: number | null = null;
+  private spiderGroup: PinGroup | null = null;
+  private keepSpider = false;
+  private popupMarker: CustomMarker | undefined;
+  private redrawAfterPopup = false;
+  private ignorePopupClose = false;
+  private openedShop = false;
+  private readonly shopIcons = new Map<string, L.Icon>();
   private defaultHomePosition: L.LatLng = L.latLng(
     50.93766174471314,
     9.777832031250002,
@@ -218,9 +229,16 @@ export class MapComponent implements OnInit {
     });
     this.map.addControl(new locateControl());
 
+    this.map.setView(this.defaultHomePosition, this.defaultZoomLevel);
+
     // Hide search results on map clicked event
     this.map.addEventListener("click", () => {
       this.searchResults = [];
+      if (!this.spiderGroup) {
+        return;
+      }
+      this.spiderGroup = null;
+      this.renderVisible(true);
     });
   }
 
@@ -240,10 +258,21 @@ export class MapComponent implements OnInit {
   }
 
   /**
-   * This firstly adds a MarkerClusterGroup where the actual markers are then added.
-   * Finally the MarkerClusterGroup is added to the map.
+   * Public map: one marker per address, then Leaflet clusters them.
+   * Internal map: only the cells in view become markers.
    */
   private async updateMarker(complete?: () => void) {
+    if (this.internal) {
+      this.installPinLayer();
+      this.shownGroups = '';
+      this.spiderGroup = null;
+      this.renderVisible(true);
+      if (complete) {
+        complete();
+      }
+      return;
+    }
+
     if (this.markerClusterGroup && this.markerClusterGroup.getLayers().length) {
       this.markerClusterGroup.clearLayers();
     }
@@ -260,53 +289,13 @@ export class MapComponent implements OnInit {
     });
 
     this.itemList.map((item: any[]) => {
-      let marker: CustomMarker;
-      marker = new CustomMarker(
+      const marker = this.createShopMarker(
         item[0],
-        L.latLng(item[1][0], item[1][1]),
-        {
-          icon: L.icon({
-            iconUrl: `assets/svg-icons/${this.searchService.mapShopTypesToImage(
-              item[2],
-            )
-              }`,
-            iconSize: [36, 42],
-            popupAnchor: [0, -20],
-            className: item[3] ? 'marker-former' : '',
-          }),
-        },
+        item[1][0],
+        item[1][1],
+        item[2],
+        Boolean(item[3]),
       );
-
-      marker.bindPopup(
-        () => {
-          return "Lade Daten...";
-        },
-        {
-          autoPanPadding: new L.Point(65, 65),
-          maxWidth: this.internal ? 420 : 300,
-        },
-      );
-
-      marker.off("click");
-      marker.addEventListener("click", (event: L.LeafletEvent) => {
-        const eventMarker: CustomMarker = event.target as CustomMarker;
-        if (this.router.isActive(`${eventMarker.getId()}`, true)) {
-          eventMarker.togglePopup();
-        } else {
-          this.router.navigate([eventMarker.getId()]);
-        }
-      });
-
-      marker.addEventListener("popupopen", (event: L.LeafletEvent) => {
-        const eventMarker: CustomMarker = event.target as CustomMarker;
-        this.searchService
-          .itemDetails(marker.getId())
-          .subscribe((itemDetails: Item) => {
-            this.selectedItem = itemDetails;
-            marker.setPopupContent(shopPopupHtml(itemDetails, this.internal));
-          });
-      });
-      //
       if (this.markerClusterGroup) {
         marker.addTo(this.markerClusterGroup);
       }
@@ -319,6 +308,274 @@ export class MapComponent implements OnInit {
     if (complete) {
       complete();
     }
+  }
+
+  private installPinLayer(): void {
+    if (!this.map || this.pinLayer) {
+      return;
+    }
+    this.pinLayer = L.layerGroup().addTo(this.map);
+    this.map.on('moveend', () => {
+      if (!this.keepSpider) {
+        this.spiderGroup = null;
+      }
+      this.keepSpider = false;
+      this.renderVisible();
+    });
+  }
+
+  private pins(): MapPin[] {
+    const pins: MapPin[] = [];
+    for (const item of this.itemList) {
+      if (!Array.isArray(item[1])) {
+        continue;
+      }
+      const lat = Number(item[1][0]);
+      const lng = Number(item[1][1]);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        continue;
+      }
+      const types = Array.isArray(item[2]) ? item[2].map((type: number) => Number(type)) : [];
+      pins.push({ id: Number(item[0]), lat, lng, types, former: Boolean(item[3]) });
+    }
+    return pins;
+  }
+
+  private renderVisible(force = false): void {
+    if (!this.map || !this.pinLayer) {
+      return;
+    }
+    if (this.popupMarker && this.pendingPopupId === null && !force) {
+      this.redrawAfterPopup = true;
+      return;
+    }
+
+    const zoom = Math.round(this.map.getZoom());
+    const bounds = this.map.getBounds();
+    const groups = visibleGroups(this.pins(), zoom, {
+      south: bounds.getSouth(),
+      west: bounds.getWest(),
+      north: bounds.getNorth(),
+      east: bounds.getEast(),
+    });
+    const stacked = this.stackToOpen(groups, zoom);
+    const signature = groups
+      .map(group => group.pins.map(pin => pin.id).sort((a, b) => a - b).join(','))
+      .sort()
+      .join('|') + (stacked ? `|s${stacked.pins[0].id}` : '');
+    if (!force && signature === this.shownGroups) {
+      this.openPending();
+      return;
+    }
+
+    this.shownGroups = signature;
+    this.spiderGroup = stacked;
+    this.ignorePopupClose = true;
+    this.pinLayer.clearLayers();
+    this.ignorePopupClose = false;
+    this.popupMarker = undefined;
+    for (const group of groups) {
+      if (group.pins.length === 1) {
+        this.addShopMarker(group.pins[0], group.lat, group.lng);
+      } else if (stacked && this.samePins(group, stacked)) {
+        this.addSpider(group);
+      } else {
+        this.addCluster(group);
+      }
+    }
+    this.openPending();
+  }
+
+  private stackToOpen(groups: PinGroup[], zoom: number): PinGroup | null {
+    if (!this.map) {
+      return null;
+    }
+    if (this.pendingPopupId !== null && zoom >= this.map.getMaxZoom()) {
+      const stacked = groups.find(group =>
+        group.pins.length > 1 && group.pins.some(pin => pin.id === this.pendingPopupId)
+      );
+      if (stacked) {
+        return stacked;
+      }
+    }
+    if (!this.spiderGroup) {
+      return null;
+    }
+    return groups.find(group => group.pins.length > 1 && this.samePins(group, this.spiderGroup)) || null;
+  }
+
+  private samePins(group: PinGroup, other: PinGroup | null): boolean {
+    if (!other || group.pins.length !== other.pins.length) {
+      return false;
+    }
+    const ids = new Set(other.pins.map(pin => pin.id));
+    return group.pins.every(pin => ids.has(pin.id));
+  }
+
+  private addCluster(group: PinGroup): void {
+    if (!this.pinLayer) {
+      return;
+    }
+    const count = group.pins.length;
+    const size = count < 10 ? 'small' : count < 100 ? 'medium' : 'large';
+    const marker = L.marker([group.lat, group.lng], {
+      icon: L.divIcon({
+        html: `<div><span>${count}</span></div>`,
+        className: `marker-cluster marker-cluster-${size}`,
+        iconSize: [40, 40],
+      }),
+    });
+    marker.on('click', () => this.openCluster(group));
+    marker.addTo(this.pinLayer);
+  }
+
+  private openCluster(group: PinGroup): void {
+    if (!this.map) {
+      return;
+    }
+    const zoom = Math.round(this.map.getZoom());
+    if (splitZoom(group.pins, zoom, this.map.getMaxZoom()) === null) {
+      this.spiderGroup = group;
+      if (zoom >= this.map.getMaxZoom()) {
+        this.renderVisible(true);
+        return;
+      }
+      this.keepSpider = true;
+      this.map.setView([group.lat, group.lng], this.map.getMaxZoom());
+      return;
+    }
+    this.spiderGroup = null;
+    this.map.fitBounds(L.latLngBounds(group.pins.map(pin => L.latLng(pin.lat, pin.lng))), {
+      padding: [48, 48],
+    });
+  }
+
+  private addSpider(group: PinGroup): void {
+    if (!this.map) {
+      return;
+    }
+    const center = this.map.latLngToLayerPoint([group.lat, group.lng]);
+    const perRing = 12;
+    group.pins.forEach((pin, index) => {
+      const ring = Math.floor(index / perRing);
+      const pos = index % perRing;
+      const onRing = Math.min(perRing, group.pins.length - ring * perRing);
+      const angle = (2 * Math.PI * pos) / onRing - Math.PI / 2;
+      const radius = 36 + ring * 28;
+      const at = this.map!.layerPointToLatLng(L.point(
+        center.x + radius * Math.cos(angle),
+        center.y + radius * Math.sin(angle),
+      ));
+      this.addShopMarker(pin, at.lat, at.lng);
+    });
+  }
+
+  private addShopMarker(pin: MapPin, lat: number, lng: number): void {
+    if (!this.pinLayer) {
+      return;
+    }
+    this.createShopMarker(pin.id, lat, lng, pin.types, pin.former).addTo(this.pinLayer);
+  }
+
+  private focusPin(id: number): void {
+    const pin = this.pins().find(item => item.id === id);
+    if (!pin || !this.map) {
+      return;
+    }
+    this.spiderGroup = null;
+    this.pendingPopupId = id;
+    const maxZoom = this.map.getMaxZoom();
+    const center = this.map.getCenter();
+    const alreadyThere = this.map.getZoom() === maxZoom
+      && Math.abs(center.lat - pin.lat) < 1e-8
+      && Math.abs(center.lng - pin.lng) < 1e-8;
+    if (alreadyThere) {
+      this.renderVisible(true);
+      return;
+    }
+    this.keepSpider = true;
+    this.map.setView([pin.lat, pin.lng], maxZoom);
+  }
+
+  private openPending(): void {
+    if (this.pendingPopupId === null || !this.pinLayer) {
+      return;
+    }
+    const id = this.pendingPopupId;
+    const marker = this.pinLayer.getLayers().find(layer =>
+      layer instanceof CustomMarker && layer.getId() === id
+    ) as CustomMarker | undefined;
+    if (!marker) {
+      return;
+    }
+    this.pendingPopupId = null;
+    this.popupMarker = marker;
+    marker.openPopup();
+  }
+
+  private createShopMarker(
+    id: number,
+    lat: number,
+    lng: number,
+    types: Array<string | number>,
+    former: boolean,
+  ): CustomMarker {
+    const marker = new CustomMarker(id, L.latLng(lat, lng), {
+      icon: this.shopIcon(types, former),
+    });
+    marker.bindPopup(
+      () => "Lade Daten...",
+      {
+        autoPanPadding: new L.Point(65, 65),
+        maxWidth: this.internal ? 420 : 300,
+      },
+    );
+    marker.off("click");
+    marker.addEventListener("click", () => {
+      if (this.router.isActive(`${marker.getId()}`, true)) {
+        marker.togglePopup();
+      } else {
+        this.router.navigate([marker.getId()]);
+      }
+    });
+    marker.addEventListener("popupopen", () => {
+      this.popupMarker = marker;
+      this.searchService.itemDetails(marker.getId()).subscribe((itemDetails: Item) => {
+        this.selectedItem = itemDetails;
+        marker.setPopupContent(shopPopupHtml(itemDetails, this.internal));
+      });
+    });
+    marker.addEventListener("popupclose", () => {
+      if (this.popupMarker === marker) {
+        this.popupMarker = undefined;
+      }
+      if (this.ignorePopupClose) {
+        return;
+      }
+      if (this.redrawAfterPopup) {
+        this.redrawAfterPopup = false;
+        this.renderVisible();
+      }
+    });
+    return marker;
+  }
+
+  private shopIcon(types: Array<string | number>, former: boolean): L.Icon {
+    const names = types.map(type => `${type}`);
+    const url = `assets/svg-icons/${this.searchService.mapShopTypesToImage(names)}`;
+    const key = `${url}|${former ? 'former' : ''}`;
+    const cached = this.shopIcons.get(key);
+    if (cached) {
+      return cached;
+    }
+    const icon = L.icon({
+      iconUrl: url,
+      iconSize: [36, 42],
+      popupAnchor: [0, -20],
+      className: former ? 'marker-former' : '',
+    });
+    this.shopIcons.set(key, icon);
+    return icon;
   }
 
   public async search(searchKeyword: string) {
@@ -347,6 +604,10 @@ export class MapComponent implements OnInit {
     if (this.searchResults) {
       this.clearSearchResults();
     }
+    if (this.internal) {
+      this.focusPin(itemId);
+      return;
+    }
     if (this.markerClusterGroup && this.map) {
       const targetMarker: L.Layer | undefined = this.markerClusterGroup
         .getLayers()
@@ -369,8 +630,19 @@ export class MapComponent implements OnInit {
         this.updateMarker(() => {
           this.route.params.subscribe((params: Params) => {
             if (params.item) {
+              this.openedShop = true;
               this.showDetails(params.item);
+              return;
             }
+            if (!this.openedShop || !this.map || this.route.snapshot.queryParams['userPosition']) {
+              return;
+            }
+            this.openedShop = false;
+            this.pendingPopupId = null;
+            this.popupMarker = undefined;
+            this.redrawAfterPopup = false;
+            this.spiderGroup = null;
+            this.map.setView(this.defaultHomePosition, this.defaultZoomLevel);
           });
         });
       });
